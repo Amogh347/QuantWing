@@ -1,0 +1,44 @@
+import pandas as pd
+import itertools
+import yfinance as yf
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+nifty_stocks = ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "WIPRO.NS", "LT.NS", "BHARTIARTL.NS", "ITC.NS", "KOTAKBANK.NS", 
+                "SBIN.NS", "MARUTI.NS", "ADANIENT.NS", "TITAN.NS", "HEROMOTOCO.NS","NTPC.NS",
+                "INDUSINDBK.NS","SUNPHARMA.NS", "BAJFINANCE.NS", "HCLTECH.NS", "ASIANPAINT.NS", "HINDALCO.NS"]
+
+stock_data = yf.download(nifty_stocks, period="5y", progress=False)['Adj Close']
+
+returns = stock_data.pct_change().dropna()
+
+stock_pairs = list(itertools.combinations(nifty_stocks, 2))
+
+correlation_dict = {}
+for pair in stock_pairs:
+    stock1, stock2 = pair
+    correlation = returns[stock1].corr(returns[stock2])
+    correlation_dict[pair] = correlation
+
+
+sorted_correlations = sorted(correlation_dict.items(), key=lambda x: x[1], reverse=True)
+
+chosen_pairs = sorted_correlations[-5:]
+
+least_correlated_stocks = set()
+for pair, correlation in chosen_pairs:
+    least_correlated_stocks.update(pair)
+
+top_5 = list(least_correlated_stocks)[:5]
+
+print("5 least correlated stocks:")
+print(top_5)
+
+selected_stock_data = stock_data[top_5]
+corr_matrix = selected_stock_data.pct_change().corr()
+
+#correlation heatmap
+plt.figure(figsize=(10, 8))
+sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", linewidths=.5)
+plt.title("Correlation Heatmap for 5 Least Correlated Stocks")
+plt.show()
